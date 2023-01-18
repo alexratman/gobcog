@@ -44,7 +44,7 @@ class AdventureCart(AdventureMixin):
         )
         if currency_name.startswith("<"):
             currency_name = "credits"
-        item_data = box(items["item"].formatted_name + " - " + humanize_number(items["price"]), lang="css")
+        item_data = box(items["item"].formatted_name + " - " + humanize_number(items["price"]), lang="ansi")
         to_delete = await channel.send(
             _("{user}, how many {item} would you like to buy?").format(user=user.mention, item=item_data)
         )
@@ -102,7 +102,7 @@ class AdventureCart(AdventureMixin):
                             item_price=humanize_number(items["price"] * pred.result),
                             currency_name=currency_name,
                         ),
-                        lang="css",
+                        lang="ansi",
                     )
                 )
                 self._current_traders[guild.id]["users"].remove(user)
@@ -123,7 +123,7 @@ class AdventureCart(AdventureMixin):
         cart = await self.config.cart_name()
         if await self.config.guild(ctx.guild).cart_name():
             cart = await self.config.guild(ctx.guild).cart_name()
-        text = box(_("[{} is bringing the cart around!]").format(cart), lang="css")
+        text = box(_("[{} is bringing the cart around!]").format(cart), lang="ansi")
         timeout = await self.config.guild(ctx.guild).cart_timeout()
         if ctx.guild.id not in self._last_trade:
             self._last_trade[ctx.guild.id] = 0
@@ -147,7 +147,7 @@ class AdventureCart(AdventureMixin):
         room_perms = room.permissions_for(ctx.me)
         if not all([room_perms.send_messages, room_perms.add_reactions]):
             log.debug(
-                "I don't have permissions to send messages or add reactions in {} ({})".format(room.id, room.guild.id)
+                f"I don't have permissions to send messages or add reactions in {room.id} ({room.guild.id})"
             )
             return
         self.bot.dispatch("adventure_cart", ctx)  # dispatch after silent return
@@ -171,7 +171,7 @@ class AdventureCart(AdventureMixin):
                 luck = item["item"].luck * 2
                 dex = item["item"].dex * 2
             else:
-                if item["item"].slot[0] == "right" or item["item"].slot[0] == "left":
+                if item["item"].slot[0] in ["right", "left"]:
                     hand = item["item"].slot[0] + _(" handed")
                 else:
                     hand = item["item"].slot[0] + _(" slot")
@@ -192,7 +192,7 @@ class AdventureCart(AdventureMixin):
                 ).format(
                     i=str(index + 1),
                     item_name=item["item"].formatted_name,
-                    lvl=item["item"].lvl,
+                    lvl=int(item["item"].lvl),
                     str_att=str(att),
                     str_int=str(intel),
                     str_cha=str(cha),
@@ -202,15 +202,14 @@ class AdventureCart(AdventureMixin):
                     item_price=humanize_number(item["price"]),
                     currency_name=currency_name,
                 ),
-                lang="css",
+                lang="ansi",
             )
         text += _("Do you want to buy any of these fine items? Tell me which one below:")
         msg = await room.send(text)
         start_adding_reactions(msg, controls.keys())
         self._current_traders[ctx.guild.id] = {"msg": msg.id, "stock": stock, "users": []}
         timeout = self._last_trade[ctx.guild.id] + 180 - time.time()
-        if timeout <= 0:
-            timeout = 0
+        timeout = max(timeout, 0)
         timer = await self._cart_countdown(ctx, timeout, _("The cart will leave in: "), room=room)
         self.tasks[msg.id] = timer
         try:
@@ -248,8 +247,11 @@ class AdventureCart(AdventureMixin):
             # 35% normal
             price *= item.max_main_stat
 
-            items.update({item.name: {"itemname": item.name, "item": item, "price": price, "lvl": item.lvl}})
+            items[item.name] = {
+                "itemname": item.name,
+                "item": item,
+                "price": price,
+                "lvl": item.lvl,
+            }
 
-        for (index, item) in enumerate(items):
-            output.update({index: items[item]})
-        return output
+        return {index: items[item] for index, item in enumerate(items)}
