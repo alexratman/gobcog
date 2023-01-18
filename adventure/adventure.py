@@ -961,7 +961,7 @@ class Adventure(
                 if use_embeds:
                     embed.description = f"{adventure_msg}\n{normal_text}"
                     if session.monster["image"]:
-                        embed.set_thumbnail(url=session.monster["image"])
+                        embed.set_image(url=session.monster["image"])
                     adventure_msg = await ctx.send(embed=embed)
                 else:
                     adventure_msg = await ctx.send(f"{adventure_msg}\n{normal_text}")
