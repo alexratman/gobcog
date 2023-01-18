@@ -56,6 +56,9 @@ class AdventureCart(AdventureMixin):
             msg = await self.bot.wait_for("message", check=pred, timeout=30)
         except asyncio.TimeoutError:
             self._current_traders[guild.id]["users"].remove(user)
+            # delete the to_delete message and let the user know they took too long
+            await to_delete.delete()
+            await smart_embed(ctx, _("I haven't got all day! Make up your mind!"))
             return
         if pred.result < 1:
             with contextlib.suppress(discord.HTTPException):
