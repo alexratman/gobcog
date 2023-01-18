@@ -487,9 +487,11 @@ class Adventure(
         with contextlib.suppress(asyncio.CancelledError):
             while True:
                 async for guild_id, session in AsyncIter(self._sessions.copy(), steps=100):
-                    if session.start_time + delta > datetime.now():
-                        if guild_id in self._sessions:
-                            del self._sessions[guild_id]
+                    if (
+                        session.start_time + delta > datetime.now()
+                        and guild_id in self._sessions
+                    ):
+                        del self._sessions[guild_id]
                 await asyncio.sleep(5)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
